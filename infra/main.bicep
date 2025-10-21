@@ -16,6 +16,9 @@ param secondaryVnetName string = 'vnet-pp-northeurope'
 @description('User email for RBAC assignment')
 param userEmail string = ''
 
+@description('User object ID for RBAC assignment')
+param userObjectId string
+
 
 // Virtual Network in West Europe with subnet (24+ IPs)
 resource primaryVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-09-01' = {
