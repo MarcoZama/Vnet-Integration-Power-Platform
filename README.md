@@ -119,11 +119,15 @@ Connect-AzAccount
 Vnet Integration PP/
 ├── deploy.ps1                            Deployment script
 ├── cleanup.ps1                           Cleanup script
+├── deploy-sql-private.ps1                Deploy Azure SQL with Private Endpoint
 ├── infra/
 │   ├── main.bicep                        Infrastructure template
 │   ├── templateEntPolicyPP.json          Enterprise Policy template
 │   └── enterprisePolicy.parameters.json  Policy parameters
+├── infra/sql-private-endpoint.bicep      SQL Private Endpoint template
+├── TESTING-GUIDE.md                      Step-by-step testing guide
 ├── deployment-info.json                  Deployment output (generated, git ignored)
+├── sql-connection-info.json              SQL connection output (git ignored)
 ├── .gitignore                            Git excluded files
 └── README.md                             Documentation
 ```
@@ -135,6 +139,37 @@ The `deploy.ps1` script generates temporary files containing sensitive informati
 - `temp-policy-params.json` - Temporary parameters for Enterprise Policy
 
 These files are automatically excluded from the repository via `.gitignore`.
+
+## Azure SQL Private Connectivity
+
+This project includes an optional pattern to deploy an Azure SQL Server and Database with a Private Endpoint connected to the same VNets used for Power Platform integration. The implementation deploys dedicated subnets for Private Endpoints so that the Power Platform delegated subnets are not affected.
+
+Key artifacts:
+- `infra/sql-private-endpoint.bicep` - Bicep template that creates:
+  - Private Endpoint subnets in both VNets (`subnet-private-endpoints-west` and `subnet-private-endpoints-north`)
+  - Azure SQL Server (public access disabled)
+  - Database
+  - Private Endpoint and Private DNS Zone (`privatelink.database.windows.net`)
+- `deploy-sql-private.ps1` - PowerShell script to orchestrate the Bicep deployment and save connection info to `sql-connection-info.json`.
+- `TESTING-GUIDE.md` - Step-by-step instructions to test connectivity from Power Apps / Power Automate.
+
+Usage example (PowerShell):
+```powershell
+.\deploy-sql-private.ps1 \
+  -SubscriptionId <YOUR_SUBSCRIPTION_ID> \
+  -SqlAdminUsername "sqladmin" \
+  -SqlAdminPassword (ConvertTo-SecureString "YourStrongP@ssw0rd123!" -AsPlainText -Force)
+```
+
+Notes and constraints:
+- Do not create Private Endpoints in subnets delegated to `Microsoft.PowerPlatform/enterprisePolicies`. The template creates separate `/24` subnets for private endpoints.
+- After deployment, link the Power Platform environment to the Enterprise Policy to enable network injection.
+- DNS resolution for the SQL FQDN (`*.database.windows.net`) is provided by the private DNS zone `privatelink.database.windows.net`, which is linked to both VNets.
+- The deployment saves connection details in `sql-connection-info.json`. This file is excluded from git.
+
+Testing:
+- Use the `TESTING-GUIDE.md` for instructions to test using Power Apps, Power Automate, or a VM inside the VNet.
+
 
 ## Troubleshooting
 
