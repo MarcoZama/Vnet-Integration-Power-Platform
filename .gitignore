@@ -1,6 +1,7 @@
 # File generati dal deployment (contengono informazioni sensibili)
 deployment-info.json
 temp-policy-params.json
+sql-connection-info.json
 
 # PowerShell
 *.ps1.swp
